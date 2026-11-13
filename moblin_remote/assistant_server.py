@@ -94,6 +94,7 @@ class AssistantServer:
 
     async def show_toast(self, title: str, sub_title: str | None = None, toast_type: str = "info") -> bool:
         if not self.is_connected():
+            logger.warning("Toast dropped, phone not connected: %r (%s)", title, toast_type)
             return False
         request_id = self._next_id
         self._next_id += 1
@@ -104,5 +105,11 @@ class AssistantServer:
             result = await asyncio.wait_for(future, timeout=REQUEST_TIMEOUT_S)
         except asyncio.TimeoutError:
             self._pending.pop(request_id, None)
+            logger.warning("Toast timed out waiting for ack: %r (%s)", title, toast_type)
             return False
-        return result == "ok"
+        ok = result == "ok"
+        if ok:
+            logger.info("Toast sent: %r (%s)%s", title, toast_type, f" - {sub_title}" if sub_title else "")
+        else:
+            logger.warning("Toast acked with result=%s: %r (%s)", result, title, toast_type)
+        return ok
