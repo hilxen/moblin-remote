@@ -59,6 +59,13 @@ def encode_show_toast_request(request_id: int, title: str, sub_title: str | None
     return json.dumps({"request": {"id": request_id, "data": {"showToast": data}}})
 
 
+def encode_set_server_bitrate_request(request_id: int, bits_per_second: int | None) -> str:
+    data: dict[str, Any] = {}
+    if bits_per_second is not None:
+        data["bitsPerSecond"] = bits_per_second
+    return json.dumps({"request": {"id": request_id, "data": {"setServerBitrate": data}}})
+
+
 class ProtocolError(Exception):
     pass
 

@@ -92,24 +92,38 @@ class AssistantServer:
             return
         await self._ws.send(message)
 
-    async def show_toast(self, title: str, sub_title: str | None = None, toast_type: str = "info") -> bool:
+    async def _send_request_for_ack(self, build_message, label: str) -> bool:
         if not self.is_connected():
-            logger.warning("Toast dropped, phone not connected: %r (%s)", title, toast_type)
+            logger.warning("%s dropped, phone not connected", label)
             return False
         request_id = self._next_id
         self._next_id += 1
         future: asyncio.Future[str] = asyncio.get_running_loop().create_future()
         self._pending[request_id] = future
-        await self._send(protocol.encode_show_toast_request(request_id, title, sub_title, toast_type))
+        await self._send(build_message(request_id))
         try:
             result = await asyncio.wait_for(future, timeout=REQUEST_TIMEOUT_S)
         except asyncio.TimeoutError:
             self._pending.pop(request_id, None)
-            logger.warning("Toast timed out waiting for ack: %r (%s)", title, toast_type)
+            logger.warning("%s timed out waiting for ack", label)
             return False
         ok = result == "ok"
         if ok:
-            logger.info("Toast sent: %r (%s)%s", title, toast_type, f" - {sub_title}" if sub_title else "")
+            logger.info("%s sent", label)
         else:
-            logger.warning("Toast acked with result=%s: %r (%s)", result, title, toast_type)
+            logger.warning("%s acked with result=%s", label, result)
         return ok
+
+    async def show_toast(self, title: str, sub_title: str | None = None, toast_type: str = "info") -> bool:
+        label = f"Toast {title!r} ({toast_type})" + (f" - {sub_title}" if sub_title else "")
+        return await self._send_request_for_ack(
+            lambda request_id: protocol.encode_show_toast_request(request_id, title, sub_title, toast_type),
+            label,
+        )
+
+    async def set_server_bitrate(self, bits_per_second: int | None) -> bool:
+        label = f"Server bitrate {bits_per_second}"
+        return await self._send_request_for_ack(
+            lambda request_id: protocol.encode_set_server_bitrate_request(request_id, bits_per_second),
+            label,
+        )
