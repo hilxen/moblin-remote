@@ -1,10 +1,10 @@
-"""Local-only fan-in for anything that wants to push a toast to the phone.
+"""Local-only fan-in for anything that wants to push a toast or a server-side
+bitrate reading to the phone.
 
 Bound to 127.0.0.1 - never exposed publicly. Any process on the same box
-(twitch-delay-bot's chat commands, a future bitrate-alert hook in
-srt-post-process, ad-hoc curl for testing) just POSTs here; none of them
-need to know about Moblin's remote-control protocol or manage the
-connection themselves.
+(twitch-delay-bot's chat commands, bitrate-alert-watcher, ad-hoc curl for
+testing) just POSTs here; none of them need to know about Moblin's
+remote-control protocol or manage the connection themselves.
 """
 
 from __future__ import annotations
@@ -42,9 +42,25 @@ def make_app(assistant: AssistantServer) -> web.Application:
             return web.json_response({"error": "Phone not connected or did not acknowledge"}, status=503)
         return web.json_response({"ok": True})
 
+    async def post_server_bitrate(request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except ValueError:
+            return web.json_response({"error": "Body must be JSON"}, status=400)
+
+        bits_per_second = body.get("bitsPerSecond")
+        if bits_per_second is not None and not isinstance(bits_per_second, int):
+            return web.json_response({"error": "'bitsPerSecond' must be an integer or null"}, status=400)
+
+        ok = await assistant.set_server_bitrate(bits_per_second)
+        if not ok:
+            return web.json_response({"error": "Phone not connected or did not acknowledge"}, status=503)
+        return web.json_response({"ok": True})
+
     async def get_health(_request: web.Request) -> web.Response:
         return web.json_response({"phoneConnected": assistant.is_connected()})
 
     app.router.add_post("/toast", post_toast)
+    app.router.add_post("/server-bitrate", post_server_bitrate)
     app.router.add_get("/health", get_health)
     return app

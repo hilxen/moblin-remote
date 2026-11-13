@@ -30,6 +30,14 @@ class MessageCodecTest(unittest.TestCase):
         self.assertNotIn("subTitle", data)
         self.assertEqual(data["type"], {"warning": {}})
 
+    def test_encode_set_server_bitrate_with_value(self):
+        message = json.loads(protocol.encode_set_server_bitrate_request(1, 5_000_000))
+        self.assertEqual(message["request"]["data"]["setServerBitrate"], {"bitsPerSecond": 5_000_000})
+
+    def test_encode_set_server_bitrate_nil_omits_field(self):
+        message = json.loads(protocol.encode_set_server_bitrate_request(2, None))
+        self.assertEqual(message["request"]["data"]["setServerBitrate"], {})
+
 
 if __name__ == "__main__":
     unittest.main()
