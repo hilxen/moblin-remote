@@ -1,0 +1,17 @@
+[Unit]
+Description=Moblin remote-control assistant bridge (toast alerts)
+After=network.target
+
+[Service]
+User=ubuntu
+EnvironmentFile=/home/ubuntu/moblin-remote/moblin-remote.env
+WorkingDirectory=/home/ubuntu/moblin-remote
+ExecStart=/home/ubuntu/moblin-remote/.venv/bin/python3 -m moblin_remote.main
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=always
+RestartSec=5
+StandardOutput=append:/tmp/moblin-remote.log
+StandardError=append:/tmp/moblin-remote.log
+
+[Install]
+WantedBy=multi-user.target
