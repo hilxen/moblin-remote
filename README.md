@@ -7,7 +7,7 @@ knowing about Moblin's remote-control protocol.
 
 ```
 chat bot          ──┐
-bitrate monitor   ──┼──► POST 127.0.0.1:8990/toast ──► moblin-remote ──wss──► phone (Moblin)
+bitrate monitor   ──┼──► POST 127.0.0.1:8990/{toast,server-bitrate} ──► moblin-remote ──wss──► phone (Moblin)
 (anything else)   ──┘
 ```
 
@@ -76,5 +76,16 @@ export $(cat moblin-remote.env | xargs)
 `type` is one of `info` / `warning` / `error` (default `info`). `subTitle`
 is optional. Returns `503` if the phone isn't currently connected, or didn't
 acknowledge within 5s.
+
+## `POST /server-bitrate`
+
+```json
+{"bitsPerSecond": 4500000}
+```
+
+Feeds a server-side bitrate reading into Moblin's own `setServerBitrate`
+status indicator, to sit next to its locally-measured one. `bitsPerSecond`
+may be `null` (e.g. to indicate "unknown"). Returns `503` under the same
+conditions as `/toast`.
 
 `GET /health` returns `{"phoneConnected": true|false}`.
