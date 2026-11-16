@@ -7,6 +7,7 @@ whatever was there before, same as Moblin's own RemoteControlAssistant.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 import secrets
 
@@ -71,7 +72,7 @@ class AssistantServer:
     async def _handle_identify(self, fields: dict) -> None:
         authentication = fields.get("authentication", "")
         expected = protocol.hash_password(self._challenge, self._salt, self._password)
-        if authentication == expected:
+        if hmac.compare_digest(authentication, expected):
             self._identified = True
             await self._send(protocol.encode_identified_ok())
             logger.info("Streamer identified")
