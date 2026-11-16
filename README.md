@@ -88,4 +88,29 @@ status indicator, to sit next to its locally-measured one. `bitsPerSecond`
 may be `null` (e.g. to indicate "unknown"). Returns `503` under the same
 conditions as `/toast`.
 
+### Estimating server-side bitrate
+
+`bitsPerSecond` is yours to define - `moblin-remote` just relays whatever
+you send. A few things worth getting right when computing it:
+
+- Count actual bytes received off the wire over a rolling window, rather
+  than reading back whatever target bitrate the encoder negotiated - on a
+  degraded connection those two numbers can diverge sharply, and the
+  received-byte count is the one that reflects what's really getting
+  through.
+- Pick a window on the order of what a viewer could notice, e.g. a few
+  seconds. Much shorter and it's dominated by individual packet/frame
+  bursts; much longer and it smooths away exactly the kind of brief dip
+  this indicator exists to catch.
+- If you're ingesting over something like SRT, its own connection stats
+  (e.g. libsrt's receive-rate counters) already account for retransmits -
+  that's often closer to perceived quality than counting raw bytes
+  yourself.
+- If an off-the-shelf media server sits in the path (MediaMTX, nginx-rtmp,
+  etc.), check whether it already exposes a bitrate/throughput metric via
+  its own API before measuring it again from scratch.
+- Treat "nothing received recently" as `null`, not `0`. `0` reads as "the
+  stream crashed to nothing"; `null` reads as "not connected / no data
+  yet" - worth keeping distinct in whatever ends up showing this value.
+
 `GET /health` returns `{"phoneConnected": true|false}`.
