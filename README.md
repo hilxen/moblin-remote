@@ -54,8 +54,8 @@ export $(cat moblin-remote.env | xargs)
 
 ## Deploy
 
-1. One-time cert issuance/renewal via DNS-01 (example.com is on Route53, so no
-   port 80 needed):
+1. One-time cert issuance/renewal via DNS-01 (if your domain is on Route53,
+   no port 80 needed):
    ```sh
    certbot certonly --dns-route53 -d your-host.example.com
    ```
